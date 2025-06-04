@@ -292,19 +292,6 @@ This project is licensed under the MIT License. See the LICENSE file for details
 - **Hugging Face**: For the transformers library and model hosting
 - **Gradio Team**: For the user interface framework
 
-## Citation
-
-If you use VisionScope-R2 in your research, please cite:
-
-```bibtex
-@software{visionscope_r2,
-  title={VisionScope-R2: Multi-Modal Vision-Language Analysis Platform},
-  author={PRITHIVSAKTHIUR},
-  year={2024},
-  url={https://github.com/PRITHIVSAKTHIUR/DocScope-R1}
-}
-```
-
 ## Contact
 
 For questions, issues, or collaborations:
