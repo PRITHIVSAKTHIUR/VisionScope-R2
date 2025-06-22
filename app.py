@@ -240,7 +240,7 @@ css = """
 
 # Create the Gradio Interface
 with gr.Blocks(css=css, theme="bethecloud/storj_theme") as demo:
-    gr.Markdown("# **VisionScope-R2**")
+    gr.Markdown("# **[VisionScope R2](https://huggingface.co/collections/prithivMLmods/multimodal-implementations-67c9982ea04b39f0608badb0)**")
     with gr.Row():
         with gr.Column():
             with gr.Tabs():
@@ -274,11 +274,11 @@ with gr.Blocks(css=css, theme="bethecloud/storj_theme") as demo:
                 value="SkyCaptioner-V1"
             )
             
-            gr.Markdown("**Model Info**")
-            gr.Markdown("⤷ [SkyCaptioner-V1](https://huggingface.co/Skywork/SkyCaptioner-V1):  structural video captioning model designed to generate high-quality, structural descriptions for video data. It integrates specialized sub-expert models.")
-            gr.Markdown("⤷ [SpaceThinker-Qwen2.5VL-3B](https://huggingface.co/remyxai/SpaceThinker-Qwen2.5VL-3B): thinking/reasoning multimodal/vision-language model (VLM) trained to enhance spatial reasoning.")
-            gr.Markdown("⤷ [coreOCR-7B-050325-preview](https://huggingface.co/prithivMLmods/coreOCR-7B-050325-preview): model is a fine-tuned version of qwen/qwen2-vl-7b, optimized for document-level optical character recognition (ocr), long-context vision-language understanding.")
-            gr.Markdown("⤷ [Imgscope-OCR-2B-0527](https://huggingface.co/prithivMLmods/Imgscope-OCR-2B-0527): fine-tuned version of qwen2-vl-2b-instruct, specifically optimized for messy handwriting recognition, document ocr, realistic handwritten ocr, and math problem solving with latex formatting.")
+            gr.Markdown("**Model Info 💻** | [Report Bug](https://huggingface.co/spaces/prithivMLmods/VisionScope-R2/discussions)")
+            gr.Markdown("> [SkyCaptioner-V1](https://huggingface.co/Skywork/SkyCaptioner-V1):  structural video captioning model designed to generate high-quality, structural descriptions for video data. It integrates specialized sub-expert models.")
+            gr.Markdown("> [SpaceThinker-Qwen2.5VL-3B](https://huggingface.co/remyxai/SpaceThinker-Qwen2.5VL-3B): thinking/reasoning multimodal/vision-language model (VLM) trained to enhance spatial reasoning.")
+            gr.Markdown("> [coreOCR-7B-050325-preview](https://huggingface.co/prithivMLmods/coreOCR-7B-050325-preview): model is a fine-tuned version of qwen/qwen2-vl-7b, optimized for document-level optical character recognition (ocr), long-context vision-language understanding.")
+            gr.Markdown("> [Imgscope-OCR-2B-0527](https://huggingface.co/prithivMLmods/Imgscope-OCR-2B-0527): fine-tuned version of qwen2-vl-2b-instruct, specifically optimized for messy handwriting recognition, document ocr, realistic handwritten ocr, and math problem solving with latex formatting.")
              
     image_submit.click(
         fn=generate_image,
