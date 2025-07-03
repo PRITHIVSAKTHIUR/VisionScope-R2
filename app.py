@@ -16,13 +16,11 @@ import cv2
 
 from transformers import (
     Qwen2_5_VLForConditionalGeneration,
-    Qwen2VLForConditionalGeneration,
+    Qwen2VLForConditionalGeneration, 
     AutoProcessor,
     AutoTokenizer,
     TextIteratorStreamer,
 )
-
-from transformers.image_utils import load_image
 
 # Constants for text generation
 MAX_MAX_NEW_TOKENS = 2048
@@ -30,6 +28,15 @@ DEFAULT_MAX_NEW_TOKENS = 1024
 MAX_INPUT_TOKEN_LENGTH = int(os.getenv("MAX_INPUT_TOKEN_LENGTH", "4096"))
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# Load Behemoth-3B-070225-post0.1
+MODEL_ID_N = "prithivMLmods/Behemoth-3B-070225-post0.1"
+processor_n = AutoProcessor.from_pretrained(MODEL_ID_N, trust_remote_code=True)
+model_n = Qwen2_5_VLForConditionalGeneration.from_pretrained(
+    MODEL_ID_N,
+    trust_remote_code=True,
+    torch_dtype=torch.float16
+).to(device).eval()
 
 # Load SkyCaptioner-V1
 MODEL_ID_M = "Skywork/SkyCaptioner-V1"
@@ -58,16 +65,16 @@ model_k = Qwen2VLForConditionalGeneration.from_pretrained(
     torch_dtype=torch.float16
 ).to(device).eval()
 
-# Load Imgscope-OCR-2B-0527
-MODEL_ID_Y = "prithivMLmods/Imgscope-OCR-2B-0527"
+# Load remyxai/SpaceOm
+MODEL_ID_Y = "remyxai/SpaceOm"
 processor_y = AutoProcessor.from_pretrained(MODEL_ID_Y, trust_remote_code=True)
-model_y = Qwen2VLForConditionalGeneration.from_pretrained(
+model_y = Qwen2_5_VLForConditionalGeneration.from_pretrained(
     MODEL_ID_Y,
     trust_remote_code=True,
     torch_dtype=torch.float16
 ).to(device).eval()
 
-
+#video sampling
 def downsample_video(video_path):
     """
     Downsamples the video to evenly spaced frames.
@@ -102,13 +109,16 @@ def generate_image(model_name: str, text: str, image: Image.Image,
     if model_name == "SkyCaptioner-V1":
         processor = processor_m
         model = model_m
+    elif model_name == "Behemoth-3B-070225-post0.1":
+        processor = processor_n
+        model = model_n
     elif model_name == "SpaceThinker-3B":
         processor = processor_z
         model = model_z
     elif model_name == "coreOCR-7B-050325-preview":
         processor = processor_k
         model = model_k
-    elif model_name == "Imgscope-OCR-2B-0527":
+    elif model_name == "SpaceOm-3B":
         processor = processor_y
         model = model_y
     else:
@@ -159,13 +169,16 @@ def generate_video(model_name: str, text: str, video_path: str,
     if model_name == "SkyCaptioner-V1":
         processor = processor_m
         model = model_m
+    elif model_name == "Behemoth-3B-070225-post0.1":
+        processor = processor_n
+        model = model_n
     elif model_name == "SpaceThinker-3B":
         processor = processor_z
         model = model_z
     elif model_name == "coreOCR-7B-050325-preview":
         processor = processor_k
         model = model_k
-    elif model_name == "Imgscope-OCR-2B-0527":
+    elif model_name == "SpaceOm-3B":
         processor = processor_y
         model = model_y
     else:
@@ -269,7 +282,7 @@ with gr.Blocks(css=css, theme="bethecloud/storj_theme") as demo:
         with gr.Column():
             output = gr.Textbox(label="Output", interactive=False, lines=2, scale=2)
             model_choice = gr.Radio(
-                choices=["SkyCaptioner-V1", "SpaceThinker-3B", "coreOCR-7B-050325-preview", "Imgscope-OCR-2B-0527"],
+                choices=["SkyCaptioner-V1", "Behemoth-3B-070225-post0.1", "SpaceThinker-3B", "coreOCR-7B-050325-preview", "SpaceOm-3B"],
                 label="Select Model",
                 value="SkyCaptioner-V1"
             )
@@ -277,9 +290,9 @@ with gr.Blocks(css=css, theme="bethecloud/storj_theme") as demo:
             gr.Markdown("**Model Info 💻** | [Report Bug](https://huggingface.co/spaces/prithivMLmods/VisionScope-R2/discussions)")
             gr.Markdown("> [SkyCaptioner-V1](https://huggingface.co/Skywork/SkyCaptioner-V1):  structural video captioning model designed to generate high-quality, structural descriptions for video data. It integrates specialized sub-expert models.")
             gr.Markdown("> [SpaceThinker-Qwen2.5VL-3B](https://huggingface.co/remyxai/SpaceThinker-Qwen2.5VL-3B): thinking/reasoning multimodal/vision-language model (VLM) trained to enhance spatial reasoning.")
-            gr.Markdown("> [coreOCR-7B-050325-preview](https://huggingface.co/prithivMLmods/coreOCR-7B-050325-preview): model is a fine-tuned version of qwen/qwen2-vl-7b, optimized for document-level optical character recognition (ocr), long-context vision-language understanding.")
-            gr.Markdown("> [Imgscope-OCR-2B-0527](https://huggingface.co/prithivMLmods/Imgscope-OCR-2B-0527): fine-tuned version of qwen2-vl-2b-instruct, specifically optimized for messy handwriting recognition, document ocr, realistic handwritten ocr, and math problem solving with latex formatting.")
-             
+            gr.Markdown("> [coreOCR-7B-050325-preview](https://huggingface.co/prithivMLmods/coreOCR-7B-050325-preview): model is a fine-tuned version of qwen/qwen2-vl-7b, optimized for document-level optical character recognition (ocr), long-context vision-language understanding.")  
+            gr.Markdown("> [SpaceOm](https://huggingface.co/remyxai/SpaceOm): SpaceOm, the reasoning traces in the spacethinker dataset average ~200 thinking tokens, so now included longer reasoning traces in the training data to help the model use more tokens in reasoning.")             
+
     image_submit.click(
         fn=generate_image,
         inputs=[model_choice, image_query, image_upload, max_new_tokens, temperature, top_p, top_k, repetition_penalty],
