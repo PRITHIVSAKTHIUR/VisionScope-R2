@@ -74,7 +74,7 @@ model_y = Qwen2_5_VLForConditionalGeneration.from_pretrained(
     torch_dtype=torch.float16
 ).to(device).eval()
 
-#video sampling
+# Video sampling
 def downsample_video(video_path):
     """
     Downsamples the video to evenly spaced frames.
@@ -105,6 +105,7 @@ def generate_image(model_name: str, text: str, image: Image.Image,
                    repetition_penalty: float = 1.2):
     """
     Generates responses using the selected model for image input.
+    Yields raw text and Markdown-formatted text.
     """
     if model_name == "SkyCaptioner-V1":
         processor = processor_m
@@ -122,11 +123,11 @@ def generate_image(model_name: str, text: str, image: Image.Image,
         processor = processor_y
         model = model_y
     else:
-        yield "Invalid model selected."
+        yield "Invalid model selected.", "Invalid model selected."
         return
 
     if image is None:
-        yield "Please upload an image."
+        yield "Please upload an image.", "Please upload an image."
         return
 
     messages = [{
@@ -154,7 +155,7 @@ def generate_image(model_name: str, text: str, image: Image.Image,
         buffer += new_text
         buffer = buffer.replace("<|im_end|>", "")
         time.sleep(0.01)
-        yield buffer
+        yield buffer, buffer
 
 @spaces.GPU
 def generate_video(model_name: str, text: str, video_path: str,
@@ -165,6 +166,7 @@ def generate_video(model_name: str, text: str, video_path: str,
                    repetition_penalty: float = 1.2):
     """
     Generates responses using the selected model for video input.
+    Yields raw text and Markdown-formatted text.
     """
     if model_name == "SkyCaptioner-V1":
         processor = processor_m
@@ -182,11 +184,11 @@ def generate_video(model_name: str, text: str, video_path: str,
         processor = processor_y
         model = model_y
     else:
-        yield "Invalid model selected."
+        yield "Invalid model selected.", "Invalid model selected."
         return
 
     if video_path is None:
-        yield "Please upload a video."
+        yield "Please upload a video.", "Please upload a video."
         return
 
     frames = downsample_video(video_path)
@@ -225,7 +227,7 @@ def generate_video(model_name: str, text: str, video_path: str,
         buffer += new_text
         buffer = buffer.replace("<|im_end|>", "")
         time.sleep(0.01)
-        yield buffer
+        yield buffer, buffer
 
 # Define examples for image and video inference
 image_examples = [
@@ -248,6 +250,11 @@ css = """
 }
 .submit-btn:hover {
     background-color: #3498db !important;
+}
+.canvas-output {
+    border: 2px solid #4682B4;
+    border-radius: 10px;
+    padding: 20px;
 }
 """
 
@@ -280,28 +287,33 @@ with gr.Blocks(css=css, theme="bethecloud/storj_theme") as demo:
                 top_k = gr.Slider(label="Top-k", minimum=1, maximum=1000, step=1, value=50)
                 repetition_penalty = gr.Slider(label="Repetition penalty", minimum=1.0, maximum=2.0, step=0.05, value=1.2)
         with gr.Column():
-            output = gr.Textbox(label="Output", interactive=False, lines=2, scale=2)
+            with gr.Column(elem_classes="canvas-output"):
+                gr.Markdown("## Output")
+                output = gr.Textbox(label="Raw Output Stream", interactive=False, lines=2, scale=2)
+                with gr.Accordion("(Result.md)", open=False):
+                    markdown_output = gr.Markdown(label="Formatted Result")
             model_choice = gr.Radio(
                 choices=["SkyCaptioner-V1", "Behemoth-3B-070225-post0.1", "SpaceThinker-3B", "coreOCR-7B-050325-preview", "SpaceOm-3B"],
                 label="Select Model",
                 value="SkyCaptioner-V1"
             )
-            
             gr.Markdown("**Model Info 💻** | [Report Bug](https://huggingface.co/spaces/prithivMLmods/VisionScope-R2/discussions)")
-            gr.Markdown("> [SkyCaptioner-V1](https://huggingface.co/Skywork/SkyCaptioner-V1):  structural video captioning model designed to generate high-quality, structural descriptions for video data. It integrates specialized sub-expert models.")
+            gr.Markdown("> [SkyCaptioner-V1](https://huggingface.co/Skywork/SkyCaptioner-V1): structural video captioning model designed to generate high-quality, structural descriptions for video data. It integrates specialized sub-expert models.")
             gr.Markdown("> [SpaceThinker-Qwen2.5VL-3B](https://huggingface.co/remyxai/SpaceThinker-Qwen2.5VL-3B): thinking/reasoning multimodal/vision-language model (VLM) trained to enhance spatial reasoning.")
-            gr.Markdown("> [coreOCR-7B-050325-preview](https://huggingface.co/prithivMLmods/coreOCR-7B-050325-preview): model is a fine-tuned version of qwen/qwen2-vl-7b, optimized for document-level optical character recognition (ocr), long-context vision-language understanding.")  
-            gr.Markdown("> [SpaceOm](https://huggingface.co/remyxai/SpaceOm): SpaceOm, the reasoning traces in the spacethinker dataset average ~200 thinking tokens, so now included longer reasoning traces in the training data to help the model use more tokens in reasoning.")             
-
+            gr.Markdown("> [coreOCR-7B-050325-preview](https://huggingface.co/prithivMLmods/coreOCR-7B-050325-preview): model is a fine-tuned version of qwen/qwen2-vl-7b, optimized for document-level optical character recognition (ocr), long-context vision-language understanding.")
+            gr.Markdown("> [SpaceOm](https://huggingface.co/remyxai/SpaceOm): SpaceOm, the reasoning traces in the spacethinker dataset average ~200 thinking tokens, so now included longer reasoning traces in the training data to help the model use more tokens in reasoning.")
+            gr.Markdown("> [Behemoth-3B-070225-post0.1](https://huggingface.co/prithivMLmods/Behemoth-3B-070225-post0.1): The behemoth-3b-070225-post0.1 model is a fine-tuned version of qwen2.5-vl-3b-instruct, optimized for detailed image captioning, OCR tasks, and chain-of-thought reasoning.")
+            gr.Markdown(">⚠️note: all the models in space are not guaranteed to perform well in video inference use cases.")
+            
     image_submit.click(
         fn=generate_image,
         inputs=[model_choice, image_query, image_upload, max_new_tokens, temperature, top_p, top_k, repetition_penalty],
-        outputs=output
+        outputs=[output, markdown_output]
     )
     video_submit.click(
         fn=generate_video,
         inputs=[model_choice, video_query, video_upload, max_new_tokens, temperature, top_p, top_k, repetition_penalty],
-        outputs=output
+        outputs=[output, markdown_output]
     )
 
 if __name__ == "__main__":
