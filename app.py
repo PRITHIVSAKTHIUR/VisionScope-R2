@@ -29,8 +29,8 @@ MAX_INPUT_TOKEN_LENGTH = int(os.getenv("MAX_INPUT_TOKEN_LENGTH", "4096"))
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# Load Behemoth-3B-070225-post0.1
-MODEL_ID_N = "prithivMLmods/Behemoth-3B-070225-post0.1"
+# Load DeepCaption-VLA-7B
+MODEL_ID_N = "prithivMLmods/DeepCaption-VLA-7B"
 processor_n = AutoProcessor.from_pretrained(MODEL_ID_N, trust_remote_code=True)
 model_n = Qwen2_5_VLForConditionalGeneration.from_pretrained(
     MODEL_ID_N,
@@ -110,7 +110,7 @@ def generate_image(model_name: str, text: str, image: Image.Image,
     if model_name == "SkyCaptioner-V1":
         processor = processor_m
         model = model_m
-    elif model_name == "Behemoth-3B-070225-post0.1":
+    elif model_name == "DeepCaption-VLA-7B":
         processor = processor_n
         model = model_n
     elif model_name == "SpaceThinker-3B":
@@ -171,7 +171,7 @@ def generate_video(model_name: str, text: str, video_path: str,
     if model_name == "SkyCaptioner-V1":
         processor = processor_m
         model = model_m
-    elif model_name == "Behemoth-3B-070225-post0.1":
+    elif model_name == "DeepCaption-VLA-7B":
         processor = processor_n
         model = model_n
     elif model_name == "SpaceThinker-3B":
@@ -289,20 +289,20 @@ with gr.Blocks(css=css, theme="bethecloud/storj_theme") as demo:
         with gr.Column():
             with gr.Column(elem_classes="canvas-output"):
                 gr.Markdown("## Output")
-                output = gr.Textbox(label="Raw Output Stream", interactive=False, lines=2, scale=2)
+                output = gr.Textbox(label="Raw Output Stream", interactive=False, lines=4, scale=2)
                 with gr.Accordion("(Result.md)", open=False):
                     markdown_output = gr.Markdown(label="Formatted Result")
             model_choice = gr.Radio(
-                choices=["SkyCaptioner-V1", "Behemoth-3B-070225-post0.1", "SpaceThinker-3B", "coreOCR-7B-050325-preview", "SpaceOm-3B"],
+                choices=["DeepCaption-VLA-7B", "SkyCaptioner-V1", "SpaceThinker-3B", "coreOCR-7B-050325-preview", "SpaceOm-3B"],
                 label="Select Model",
-                value="SkyCaptioner-V1"
+                value="DeepCaption-VLA-7B"
             )
             gr.Markdown("**Model Info 💻** | [Report Bug](https://huggingface.co/spaces/prithivMLmods/VisionScope-R2/discussions)")
             gr.Markdown("> [SkyCaptioner-V1](https://huggingface.co/Skywork/SkyCaptioner-V1): structural video captioning model designed to generate high-quality, structural descriptions for video data. It integrates specialized sub-expert models.")
             gr.Markdown("> [SpaceThinker-Qwen2.5VL-3B](https://huggingface.co/remyxai/SpaceThinker-Qwen2.5VL-3B): thinking/reasoning multimodal/vision-language model (VLM) trained to enhance spatial reasoning.")
             gr.Markdown("> [coreOCR-7B-050325-preview](https://huggingface.co/prithivMLmods/coreOCR-7B-050325-preview): model is a fine-tuned version of qwen/qwen2-vl-7b, optimized for document-level optical character recognition (ocr), long-context vision-language understanding.")
             gr.Markdown("> [SpaceOm](https://huggingface.co/remyxai/SpaceOm): SpaceOm, the reasoning traces in the spacethinker dataset average ~200 thinking tokens, so now included longer reasoning traces in the training data to help the model use more tokens in reasoning.")
-            gr.Markdown("> [Behemoth-3B-070225-post0.1](https://huggingface.co/prithivMLmods/Behemoth-3B-070225-post0.1): The behemoth-3b-070225-post0.1 model is a fine-tuned version of qwen2.5-vl-3b-instruct, optimized for detailed image captioning, OCR tasks, and chain-of-thought reasoning.")
+            gr.Markdown("> [DeepCaption-VLA-7B](https://huggingface.co/prithivMLmods/DeepCaption-VLA-7B): DeepCaption-VLA-7B model is a fine-tuned version of Qwen2.5-VL-7B-Instruct, tailored for Image Captioning and VLA. This variant is designed to generate precise, highly descriptive captions.")
             gr.Markdown(">⚠️note: all the models in space are not guaranteed to perform well in video inference use cases.")
             
     image_submit.click(
