@@ -1,4 +1,6 @@
-# VisionScope-R2
+# **VisionScope-R2**
+
+<img width="1767" height="1219" alt="Screenshot 2025-10-16 at 11-45-45 VisionScope-R2 - a Hugging Face Space by prithivMLmods" src="https://github.com/user-attachments/assets/15ffd02c-0d4d-4a23-b5fb-fc5961143a26" />
 
 A comprehensive multi-modal AI application that integrates four specialized vision-language models for advanced image and video analysis. VisionScope-R2 offers OCR capabilities, spatial reasoning, handwriting recognition, and structural video captioning through an intuitive Gradio interface.
 
