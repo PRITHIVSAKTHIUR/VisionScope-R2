@@ -6,6 +6,7 @@ import requests
 import time
 import asyncio
 from threading import Thread
+from typing import Iterable
 
 import gradio as gr
 import spaces
@@ -21,9 +22,75 @@ from transformers import (
     AutoTokenizer,
     TextIteratorStreamer,
 )
+from gradio.themes import Soft
+from gradio.themes.utils import colors, fonts, sizes
+
+# --- Theme and CSS Definition ---
+
+colors.steel_blue = colors.Color(
+    name="steel_blue",
+    c50="#EBF3F8",
+    c100="#D3E5F0",
+    c200="#A8CCE1",
+    c300="#7DB3D2",
+    c400="#529AC3",
+    c500="#4682B4",  # SteelBlue base color
+    c600="#3E72A0",
+    c700="#36638C",
+    c800="#2E5378",
+    c900="#264364",
+    c950="#1E3450",
+)
+
+class SteelBlueTheme(Soft):
+    def __init__(
+        self,
+        *,
+        primary_hue: colors.Color | str = colors.gray,
+        secondary_hue: colors.Color | str = colors.steel_blue,
+        neutral_hue: colors.Color | str = colors.slate,
+        text_size: sizes.Size | str = sizes.text_lg,
+        font: fonts.Font | str | Iterable[fonts.Font | str] = (
+            fonts.GoogleFont("Outfit"), "Arial", "sans-serif",
+        ),
+        font_mono: fonts.Font | str | Iterable[fonts.Font | str] = (
+            fonts.GoogleFont("IBM Plex Mono"), "ui-monospace", "monospace",
+        ),
+    ):
+        super().__init__(
+            primary_hue=primary_hue,
+            secondary_hue=secondary_hue,
+            neutral_hue=neutral_hue,
+            text_size=text_size,
+            font=font,
+            font_mono=font_mono,
+        )
+        super().set(
+            background_fill_primary="*primary_50",
+            background_fill_primary_dark="*primary_900",
+            body_background_fill="linear-gradient(135deg, *primary_200, *primary_100)",
+            body_background_fill_dark="linear-gradient(135deg, *primary_900, *primary_800)",
+            button_primary_text_color="white",
+            button_primary_text_color_hover="white",
+            button_primary_background_fill="linear-gradient(90deg, *secondary_500, *secondary_600)",
+            button_primary_background_fill_hover="linear-gradient(90deg, *secondary_600, *secondary_700)",
+            button_primary_background_fill_dark="linear-gradient(90deg, *secondary_600, *secondary_800)",
+            button_primary_background_fill_hover_dark="linear-gradient(90deg, *secondary_500, *secondary_500)",
+            slider_color="*secondary_500",
+            slider_color_dark="*secondary_600",
+            block_title_text_weight="600",
+            block_border_width="3px",
+            block_shadow="*shadow_drop_lg",
+            button_primary_shadow="*shadow_drop_lg",
+            button_large_padding="11px",
+            color_accent_soft="*primary_100",
+            block_label_background_fill="*primary_200",
+        )
+
+steel_blue_theme = SteelBlueTheme()
 
 # Constants for text generation
-MAX_MAX_NEW_TOKENS = 2048
+MAX_MAX_NEW_TOKENS = 4096
 DEFAULT_MAX_NEW_TOKENS = 1024
 MAX_INPUT_TOKEN_LENGTH = int(os.getenv("MAX_INPUT_TOKEN_LENGTH", "4096"))
 
@@ -84,7 +151,7 @@ def downsample_video(video_path):
     total_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = vidcap.get(cv2.CAP_PROP_FPS)
     frames = []
-    frame_indices = np.linspace(0, total_frames - 1, 10, dtype=int)
+    frame_indices = np.linspace(0, total_frames - 1, min(total_frames, 10), dtype=int)
     for i in frame_indices:
         vidcap.set(cv2.CAP_PROP_POS_FRAMES, i)
         success, image = vidcap.read()
@@ -108,20 +175,15 @@ def generate_image(model_name: str, text: str, image: Image.Image,
     Yields raw text and Markdown-formatted text.
     """
     if model_name == "SkyCaptioner-V1":
-        processor = processor_m
-        model = model_m
+        processor, model = processor_m, model_m
     elif model_name == "DeepCaption-VLA-7B":
-        processor = processor_n
-        model = model_n
+        processor, model = processor_n, model_n
     elif model_name == "SpaceThinker-3B":
-        processor = processor_z
-        model = model_z
+        processor, model = processor_z, model_z
     elif model_name == "coreOCR-7B-050325-preview":
-        processor = processor_k
-        model = model_k
+        processor, model = processor_k, model_k
     elif model_name == "SpaceOm-3B":
-        processor = processor_y
-        model = model_y
+        processor, model = processor_y, model_y
     else:
         yield "Invalid model selected.", "Invalid model selected."
         return
@@ -133,7 +195,7 @@ def generate_image(model_name: str, text: str, image: Image.Image,
     messages = [{
         "role": "user",
         "content": [
-            {"type": "image", "image": image},
+            {"type": "image"},
             {"type": "text", "text": text},
         ]
     }]
@@ -143,7 +205,7 @@ def generate_image(model_name: str, text: str, image: Image.Image,
         images=[image],
         return_tensors="pt",
         padding=True,
-        truncation=False,
+        truncation=True,
         max_length=MAX_INPUT_TOKEN_LENGTH
     ).to(device)
     streamer = TextIteratorStreamer(processor, skip_prompt=True, skip_special_tokens=True)
@@ -169,20 +231,15 @@ def generate_video(model_name: str, text: str, video_path: str,
     Yields raw text and Markdown-formatted text.
     """
     if model_name == "SkyCaptioner-V1":
-        processor = processor_m
-        model = model_m
+        processor, model = processor_m, model_m
     elif model_name == "DeepCaption-VLA-7B":
-        processor = processor_n
-        model = model_n
+        processor, model = processor_n, model_n
     elif model_name == "SpaceThinker-3B":
-        processor = processor_z
-        model = model_z
+        processor, model = processor_z, model_z
     elif model_name == "coreOCR-7B-050325-preview":
-        processor = processor_k
-        model = model_k
+        processor, model = processor_k, model_k
     elif model_name == "SpaceOm-3B":
-        processor = processor_y
-        model = model_y
+        processor, model = processor_y, model_y
     else:
         yield "Invalid model selected.", "Invalid model selected."
         return
@@ -206,7 +263,7 @@ def generate_video(model_name: str, text: str, video_path: str,
         add_generation_prompt=True,
         return_dict=True,
         return_tensors="pt",
-        truncation=False,
+        truncation=True,
         max_length=MAX_INPUT_TOKEN_LENGTH
     ).to(device)
     streamer = TextIteratorStreamer(processor, skip_prompt=True, skip_special_tokens=True)
@@ -244,67 +301,46 @@ video_examples = [
 ]
 
 css = """
-.submit-btn {
-    background-color: #2980b9 !important;
-    color: white !important;
+#main-title h1 {
+    font-size: 2.3em !important;
 }
-.submit-btn:hover {
-    background-color: #3498db !important;
-}
-.canvas-output {
-    border: 2px solid #4682B4;
-    border-radius: 10px;
-    padding: 20px;
+#output-title h2 {
+    font-size: 2.1em !important;
 }
 """
 
 # Create the Gradio Interface
-with gr.Blocks(css=css, theme="bethecloud/storj_theme") as demo:
-    gr.Markdown("# **[VisionScope R2](https://huggingface.co/collections/prithivMLmods/multimodal-implementations-67c9982ea04b39f0608badb0)**")
+with gr.Blocks(css=css, theme=steel_blue_theme) as demo:
+    gr.Markdown("# **VisionScope R2**", elem_id="main-title")
     with gr.Row():
-        with gr.Column():
+        with gr.Column(scale=2):
             with gr.Tabs():
                 with gr.TabItem("Image Inference"):
                     image_query = gr.Textbox(label="Query Input", placeholder="Enter your query here...")
-                    image_upload = gr.Image(type="pil", label="Image")
-                    image_submit = gr.Button("Submit", elem_classes="submit-btn")
-                    gr.Examples(
-                        examples=image_examples,
-                        inputs=[image_query, image_upload]
-                    )
+                    image_upload = gr.Image(type="pil", label="Upload Image", height=290)
+                    image_submit = gr.Button("Submit", variant="primary")
+                    gr.Examples(examples=image_examples, inputs=[image_query, image_upload])
                 with gr.TabItem("Video Inference"):
                     video_query = gr.Textbox(label="Query Input", placeholder="Enter your query here...")
-                    video_upload = gr.Video(label="Video")
-                    video_submit = gr.Button("Submit", elem_classes="submit-btn")
-                    gr.Examples(
-                        examples=video_examples,
-                        inputs=[video_query, video_upload]
-                    )
+                    video_upload = gr.Video(label="Upload Video(<= 30s)", height=290)
+                    video_submit = gr.Button("Submit", variant="primary")
+                    gr.Examples(examples=video_examples, inputs=[video_query, video_upload])
             with gr.Accordion("Advanced options", open=False):
                 max_new_tokens = gr.Slider(label="Max new tokens", minimum=1, maximum=MAX_MAX_NEW_TOKENS, step=1, value=DEFAULT_MAX_NEW_TOKENS)
                 temperature = gr.Slider(label="Temperature", minimum=0.1, maximum=4.0, step=0.1, value=0.6)
                 top_p = gr.Slider(label="Top-p (nucleus sampling)", minimum=0.05, maximum=1.0, step=0.05, value=0.9)
                 top_k = gr.Slider(label="Top-k", minimum=1, maximum=1000, step=1, value=50)
                 repetition_penalty = gr.Slider(label="Repetition penalty", minimum=1.0, maximum=2.0, step=0.05, value=1.2)
-        with gr.Column():
-            with gr.Column(elem_classes="canvas-output"):
-                gr.Markdown("## Output")
-                output = gr.Textbox(label="Raw Output Stream", interactive=False, lines=4, scale=2)
-                with gr.Accordion("(Result.md)", open=False):
-                    markdown_output = gr.Markdown(label="Formatted Result")
+        with gr.Column(scale=3):
+            gr.Markdown("## Output", elem_id="output-title")
+            output = gr.Textbox(label="Raw Output Stream", interactive=False, lines=11, show_copy_button=True)
+            with gr.Accordion("(Result.md)", open=False):
+                markdown_output = gr.Markdown(label="Formatted Result")
             model_choice = gr.Radio(
                 choices=["DeepCaption-VLA-7B", "SkyCaptioner-V1", "SpaceThinker-3B", "coreOCR-7B-050325-preview", "SpaceOm-3B"],
                 label="Select Model",
                 value="DeepCaption-VLA-7B"
             )
-            gr.Markdown("**Model Info 💻** | [Report Bug](https://huggingface.co/spaces/prithivMLmods/VisionScope-R2/discussions)")
-            gr.Markdown("> [SkyCaptioner-V1](https://huggingface.co/Skywork/SkyCaptioner-V1): structural video captioning model designed to generate high-quality, structural descriptions for video data. It integrates specialized sub-expert models.")
-            gr.Markdown("> [SpaceThinker-Qwen2.5VL-3B](https://huggingface.co/remyxai/SpaceThinker-Qwen2.5VL-3B): thinking/reasoning multimodal/vision-language model (VLM) trained to enhance spatial reasoning.")
-            gr.Markdown("> [coreOCR-7B-050325-preview](https://huggingface.co/prithivMLmods/coreOCR-7B-050325-preview): model is a fine-tuned version of qwen/qwen2-vl-7b, optimized for document-level optical character recognition (ocr), long-context vision-language understanding.")
-            gr.Markdown("> [SpaceOm](https://huggingface.co/remyxai/SpaceOm): SpaceOm, the reasoning traces in the spacethinker dataset average ~200 thinking tokens, so now included longer reasoning traces in the training data to help the model use more tokens in reasoning.")
-            gr.Markdown("> [DeepCaption-VLA-7B](https://huggingface.co/prithivMLmods/DeepCaption-VLA-7B): DeepCaption-VLA-7B model is a fine-tuned version of Qwen2.5-VL-7B-Instruct, tailored for Image Captioning and VLA. This variant is designed to generate precise, highly descriptive captions.")
-            gr.Markdown(">⚠️note: all the models in space are not guaranteed to perform well in video inference use cases.")
-            
     image_submit.click(
         fn=generate_image,
         inputs=[model_choice, image_query, image_upload, max_new_tokens, temperature, top_p, top_k, repetition_penalty],
@@ -317,4 +353,4 @@ with gr.Blocks(css=css, theme="bethecloud/storj_theme") as demo:
     )
 
 if __name__ == "__main__":
-    demo.queue(max_size=30).launch(share=True, mcp_server=True, ssr_mode=False, show_error=True)
+    demo.queue(max_size=50).launch(mcp_server=True, ssr_mode=False, show_error=True)
